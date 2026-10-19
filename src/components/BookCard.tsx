@@ -7,9 +7,10 @@ interface BookCardProps {
   isBorrowed: boolean;
   onBorrow: (id: string) => void;
   onReturn: (id: string) => void;
+  isBorrowedPage?: boolean;
 }
 
-export const BookCard: React.FC<BookCardProps> = React.memo(({ book, isBorrowed, onBorrow, onReturn }) => {
+export const BookCard: React.FC<BookCardProps> = React.memo(({ book, isBorrowed, onBorrow, onReturn, isBorrowedPage = false }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -40,16 +41,7 @@ export const BookCard: React.FC<BookCardProps> = React.memo(({ book, isBorrowed,
         justifyContent: 'space-between',
         alignItems: 'center',
         gap: '20px',
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        cursor: 'default',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-3px)';
-        e.currentTarget.style.boxShadow = isDark ? '0 10px 25px rgba(0, 0, 0, 0.4)' : '0 10px 25px rgba(0, 0, 0, 0.08)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = isDark ? '0 4px 20px rgba(0, 0, 0, 0.25)' : '0 4px 16px rgba(0, 0, 0, 0.04)';
+        transition: 'all 0.25s ease',
       }}
     >
       <div style={{ flex: 1 }}>
@@ -76,23 +68,20 @@ export const BookCard: React.FC<BookCardProps> = React.memo(({ book, isBorrowed,
           ✍️ Tác giả: <strong style={{ color: isDark ? '#e5e7eb' : '#111827' }}>{book.author}</strong> &nbsp;|&nbsp; 🗓️ Năm XB: {book.publishedYear}
         </p>
 
-        <p style={{ margin: '8px 0 0 0', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span>Trạng thái:</span>
-          <span
-            style={{
-              color: book.availableCopies > 0 ? '#10b981' : '#ef4444',
-              backgroundColor: book.availableCopies > 0 ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5') : (isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2'),
-              padding: '2px 8px',
-              borderRadius: '6px',
-            }}
-          >
-            {book.availableCopies > 0 ? `Còn ${book.availableCopies} bản` : 'Đã hết sách'}
-          </span>
-        </p>
+        {/* Chỉ hiển thị số lượng bản còn lại nếu KHÔNG PHẢI trang Sách Đang Mượn */}
+        {!isBorrowedPage && (
+          <p style={{ margin: '8px 0 0 0', fontSize: '13px', fontWeight: '600' }}>
+            Trạng thái:{' '}
+            <span style={{ color: book.availableCopies > 0 ? '#10b981' : '#ef4444' }}>
+              {book.availableCopies > 0 ? `Còn ${book.availableCopies} bản` : 'Đã hết sách'}
+            </span>
+          </p>
+        )}
       </div>
 
       <div>
-        {isBorrowed ? (
+        {isBorrowedPage ? (
+          /* TRANG SÁCH ĐANG MƯỢN */
           <button
             onClick={() => onReturn(book.id)}
             style={{
@@ -107,35 +96,28 @@ export const BookCard: React.FC<BookCardProps> = React.memo(({ book, isBorrowed,
               boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#dc2626')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ef4444')}
           >
             🔄 Trả sách
           </button>
         ) : (
+          /* TRANG CHỦ */
           <button
-            disabled={book.availableCopies === 0}
+            disabled={book.availableCopies === 0 || isBorrowed}
             onClick={() => onBorrow(book.id)}
             style={{
               padding: '10px 22px',
-              backgroundColor: book.availableCopies === 0 ? (isDark ? '#374151' : '#e5e7eb') : '#10b981',
-              color: book.availableCopies === 0 ? (isDark ? '#9ca3af' : '#9ca3af') : '#ffffff',
+              backgroundColor: isBorrowed ? '#6b7280' : book.availableCopies === 0 ? (isDark ? '#374151' : '#e5e7eb') : '#10b981',
+              color: '#ffffff',
               border: 'none',
               borderRadius: '10px',
-              cursor: book.availableCopies === 0 ? 'not-allowed' : 'pointer',
+              cursor: book.availableCopies === 0 || isBorrowed ? 'not-allowed' : 'pointer',
               fontWeight: '700',
               fontSize: '14px',
-              boxShadow: book.availableCopies === 0 ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)',
+              boxShadow: isBorrowed || book.availableCopies === 0 ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={(e) => {
-              if (book.availableCopies > 0) e.currentTarget.style.backgroundColor = '#059669';
-            }}
-            onMouseLeave={(e) => {
-              if (book.availableCopies > 0) e.currentTarget.style.backgroundColor = '#10b981';
-            }}
           >
-            {book.availableCopies === 0 ? '🚫 Hết bản' : '📖 Mượn sách'}
+            {isBorrowed ? '✅ Đã mượn' : book.availableCopies === 0 ? '🚫 Hết bản' : '📖 Mượn sách'}
           </button>
         )}
       </div>
